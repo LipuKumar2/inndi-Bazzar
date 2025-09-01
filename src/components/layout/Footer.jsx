@@ -4,8 +4,9 @@ import { FaFacebookF, FaInstagram, FaTwitter, FaLinkedin } from "react-icons/fa"
 
 const Footer = () => {
   return (
-    <footer className="bg-gradient-to-r from-rose-500 via-orange-400 to-yellow-300 text-gray-900 pt-16 pb-10">
+    <footer className="bg-gradient-to-r bg-black text-gray-900 pt-16 pb-10">
       <div className="max-w-7xl mx-auto px-6 md:px-16 lg:px-24 grid grid-cols-1 md:grid-cols-4 gap-10">
+        
         
         {/* Brand Info */}
         <div>
@@ -14,10 +15,10 @@ const Footer = () => {
             Fresh Spices, Dry Fruits, Exotic Fruits, Handicrafts, Wellness & more delivered to your doorstep.
           </p>
           <div className="flex gap-4 mt-4">
-            <a href="#" className="hover:text-white/70 transition"><FaFacebookF size={20} /></a>
-            <a href="#" className="hover:text-white/70 transition"><FaInstagram size={20} /></a>
-            <a href="#" className="hover:text-white/70 transition"><FaTwitter size={20} /></a>
-            <a href="#" className="hover:text-white/70 transition"><FaLinkedin size={20} /></a>
+            <a href="#" className="text-white hover:text-blue-600 transition"><FaFacebookF size={20} /></a>
+            <a href="#" className="text-white hover:text-pink-500 transition"><FaInstagram size={20} /></a>
+            <a href="#" className="text-white hover:text-blue-600 transition"><FaTwitter size={20} /></a>
+            <a href="#" className="text-white hover:text-blue-600 transition"><FaLinkedin size={20} /></a>
           </div>
         </div>
 

@@ -25,9 +25,7 @@ const Navbar = () => {
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
 
   // ✅ check authentication from localStorage
-  const [isAuthenticated, setIsAuthenticated] = useState(
-    localStorage.getItem("isLoggedIn") === "true"
-  );
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   const navigate = useNavigate();
   const location = useLocation();
@@ -37,14 +35,31 @@ const Navbar = () => {
   const { searchProducts } = useSearch(); // Get the search function from context
 
   // ✅ keep auth state synced with localStorage changes
-  useEffect(() => {
-    const checkAuth = () => {
-      setIsAuthenticated(localStorage.getItem("isLoggedIn") === "true");
-    };
-    window.addEventListener("storage", checkAuth);
-    checkAuth();
-    return () => window.removeEventListener("storage", checkAuth);
-  }, []);
+useEffect(() => {
+  const fetchUser = async () => {
+    try {
+      const response = await fetch("http://localhost:5000/auth/user/home", {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+      }); 
+      if (response.ok) {
+        const data = await response.json();
+        console.log("User data:", data);
+        setIsAuthenticated(true);
+      } else {
+        setIsAuthenticated(false);
+      }
+    } catch (error) {
+      console.error("Error fetching user data:", error);
+      setIsAuthenticated(false);
+    }
+  };
+  fetchUser();
+}, []);   // ✅ This is fine, it should run once
+
 
   // Close dropdowns on outside click
   useEffect(() => {

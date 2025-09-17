@@ -6,24 +6,89 @@ import { FcGoogle } from "react-icons/fc";
 import { FaFacebookF } from "react-icons/fa";
 
 function SignIn() {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
   const navigate = useNavigate();
+  const [formData, setFormData] = useState({ 
+    email: "", 
+    password: "" 
+  });
+  const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [errors, setErrors] = useState({});
 
-  const handleSubmit = (e) => {
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ 
+      ...prev, 
+      [name]: value 
+    }));
+    // Clear error when user starts typing
+    if (errors[name]) {
+      setErrors((prev) => ({
+        ...prev,
+        [name]: ""
+      }));
+    }
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    setLoading(true);
+    
+    // Basic validation
+    const newErrors = {};
+    if (!formData.email) newErrors.email = "Email is required";
+    if (!formData.password) newErrors.password = "Password is required";
+    
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      setLoading(false);
+      return;
+    }
+    
+    try {
+      console.log("Login Data:", formData);
 
-    // --- Fake authentication ---
-    if (email === "test@gmail.com" && password === "123456") {
-      // Save login state (localStorage)
-      localStorage.setItem("isLoggedIn", "true");
-      localStorage.setItem("userEmail", email);
+      const response = await fetch("http://localhost:5000/auth/user/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+        body: JSON.stringify(formData),
+      });
 
-      // Redirect to profile/account page
-      navigate("/account");
-    } else {
-      setError("Invalid email or password. Try again.");
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || "Login failed");
+      }
+
+      const data = await response.json();
+      console.log("Login success:", data);
+      
+      // Store user data (adjust based on your response structure)
+      localStorage.setItem("user", JSON.stringify(data.user));
+      localStorage.setItem("token", data.token);
+      
+      // Navigate to home/dashboard
+      navigate("/");
+    } catch (error) {
+      console.error("Login error:", error);
+      setErrors({ submit: error.message || "Login Failed. Please try again." });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGoogleLogin = () => {
+    try {
+      setLoading(true);
+      setErrors({});
+      // Redirect to Google OAuth endpoint
+      window.location.href = 'http://localhost:5000/auth/user/google';
+    } catch (err) {
+      console.error('Google login error:', err);
+      setErrors({ submit: 'Failed to initiate Google login. Please try again.' });
+      setLoading(false);
     }
   };
 
@@ -45,29 +110,50 @@ function SignIn() {
           </div>
 
           {/* Error Message */}
-          {error && (
-            <p className="bg-red-100 text-red-600 text-sm p-2 rounded-md mt-4">
-              {error}
-            </p>
+          {errors.submit && (
+            <div className="bg-red-100 text-red-600 text-sm p-2 rounded-md mt-4">
+              {errors.submit}
+            </div>
           )}
 
           {/* Form */}
-          <form onSubmit={handleSubmit}>
-            <input
-              type="email"
-              placeholder="Email Address"
-              className="w-full border border-gray-300 rounded-lg px-4 py-3 mt-8 mb-4 focus:ring-2 focus:ring-[#475E2A] focus:outline-none transition"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-            />
+          <form onSubmit={handleSubmit} className="mt-6">
+            <div className="mb-4">
+              <input
+                type="email"
+                name="email"
+                placeholder="Email Address"
+                className={`w-full border ${errors.email ? 'border-red-500' : 'border-gray-300'} rounded-lg px-4 py-3 focus:ring-2 focus:ring-[#475E2A] focus:outline-none transition`}
+                value={formData.email}
+                onChange={handleChange}
+              />
+              {errors.email && (
+                <p className="text-red-500 text-xs mt-1">{errors.email}</p>
+              )}
+            </div>
 
-            <input
-              type="password"
-              placeholder="Password"
-              className="w-full border border-gray-300 rounded-lg px-4 py-3 mb-2 focus:ring-2 focus:ring-[#475E2A] focus:outline-none transition"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-            />
+            <div className="mb-2">
+              <div className="relative">
+                <input
+                  type={showPassword ? "text" : "password"}
+                  name="password"
+                  placeholder="Password"
+                  className={`w-full border ${errors.password ? 'border-red-500' : 'border-gray-300'} rounded-lg px-4 py-3 focus:ring-2 focus:ring-[#475E2A] focus:outline-none transition`}
+                  value={formData.password}
+                  onChange={handleChange}
+                />
+                <button
+                  type="button"
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500"
+                  onClick={() => setShowPassword(!showPassword)}
+                >
+                  {showPassword ? "Hide" : "Show"}
+                </button>
+              </div>
+              {errors.password && (
+                <p className="text-red-500 text-xs mt-1">{errors.password}</p>
+              )}
+            </div>
 
             {/* Forgot password link */}
             <div className="flex justify-end mb-6">
@@ -82,9 +168,10 @@ function SignIn() {
             {/* Login button */}
             <button
               type="submit"
-              className="w-full bg-[#475E2A] hover:bg-[#3a4b22] text-white font-semibold py-3 rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-0.5"
+              disabled={loading}
+              className="w-full bg-[#475E2A] hover:bg-[#3a4b22] text-white font-semibold py-3 rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Sign In
+              {loading ? "Signing In..." : "Sign In"}
             </button>
           </form>
 
@@ -97,13 +184,20 @@ function SignIn() {
 
           {/* Social Login */}
           <div className="space-y-3">
-            <button className="w-full flex items-center justify-center gap-3 border border-gray-300 rounded-lg py-3 hover:bg-gray-50 hover:shadow-md transition">
+            <button 
+              type="button"
+              onClick={handleGoogleLogin}
+              disabled={loading}
+              className="w-full flex items-center justify-center gap-3 border border-gray-300 rounded-lg py-3 hover:bg-gray-50 hover:shadow-md transition disabled:opacity-50 disabled:cursor-not-allowed"
+            >
               <FcGoogle className="text-xl" />
               <span className="font-medium text-gray-700">
                 Continue with Google
               </span>
             </button>
-            <button className="w-full flex items-center justify-center gap-3 border border-gray-300 rounded-lg py-3 hover:bg-gray-50 hover:shadow-md transition">
+            <button 
+              className="w-full flex items-center justify-center gap-3 border border-gray-300 rounded-lg py-3 hover:bg-gray-50 hover:shadow-md transition"
+            >
               <FaFacebookF className="text-blue-600 text-lg" />
               <span className="font-medium text-gray-700">
                 Continue with Facebook
@@ -113,7 +207,7 @@ function SignIn() {
 
           {/* Redirect to Sign Up */}
           <p className="text-gray-700 text-center mt-6">
-            Don’t have an account?{" "}
+            Don't have an account?{" "}
             <Link
               to="/signup"
               className="text-[#475E2A] font-semibold hover:underline"

@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { FiLock, FiMail, FiEye, FiEyeOff } from 'react-icons/fi';
@@ -23,20 +22,59 @@ const AdminLogin = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setIsLoading(true);
     setError('');
+    setIsLoading(true);
 
-    // Simulate API call
-    setTimeout(() => {
-      if (credentials.email === 'admin@inndibazzar.com' && credentials.password === 'admin123') {
-        localStorage.setItem('adminToken', 'admin-auth-token');
-        localStorage.setItem('adminEmail', credentials.email);
-        navigate('/admin/dashboard');
-      } else {
-        setError('Invalid credentials. Please try again.');
-      }
+    // Basic client-side validation
+    if (!credentials.email || !credentials.password) {
+      setError('Please enter both email and password');
       setIsLoading(false);
-    }, 1000);
+      return;
+    }
+
+    try {
+      const response = await fetch('http://localhost:5000/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(credentials),
+        credentials: 'include'
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.success) {
+        // Store admin data
+        localStorage.setItem("adminToken", data.token);
+        localStorage.setItem("admin", JSON.stringify(data.admin));
+        localStorage.setItem("isAdmin", "true");
+        
+        console.log('Admin login successful:', data.admin);
+        navigate("/admin/dashboard");
+      } else {
+        setError(data.message || "Invalid credentials");
+      }
+    } catch (error) {
+      console.error('Login error:', error);
+      setError("Login failed. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleAdminGoogleLogin = () => {
+    try {
+      setIsLoading(true);
+      setError('');
+      
+      // Redirect to the admin Google OAuth endpoint
+      window.location.href = `http://localhost:5000/auth/admin/google`;
+    } catch (err) {
+      console.error('Admin Google login error:', err);
+      setError('Failed to initiate admin login. Please try again.');
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -55,12 +93,14 @@ const AdminLogin = () => {
             Sign in to access the dashboard
           </p>
         </div>
+        
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
           {error && (
             <div className="bg-red-50 text-red-700 p-3 rounded-lg text-sm">
               {error}
             </div>
           )}
+          
           <div className="space-y-4">
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-gray-700">
@@ -78,10 +118,12 @@ const AdminLogin = () => {
                   value={credentials.email}
                   onChange={handleChange}
                   className="appearance-none block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-xl placeholder-gray-400 focus:outline-none focus:ring-green-500 focus:border-green-500 sm:text-sm"
-                  placeholder="admin@inndibazzar.com"
+                  placeholder="admin@example.com"
+                  disabled={isLoading}
                 />
               </div>
             </div>
+            
             <div>
               <label htmlFor="password" className="block text-sm font-medium text-gray-700">
                 Password
@@ -99,12 +141,14 @@ const AdminLogin = () => {
                   onChange={handleChange}
                   className="appearance-none block w-full pl-10 pr-12 py-3 border border-gray-300 rounded-xl placeholder-gray-400 focus:outline-none focus:ring-green-500 focus:border-green-500 sm:text-sm"
                   placeholder="Enter your password"
+                  disabled={isLoading}
                 />
                 <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
                     className="text-gray-400 hover:text-gray-500"
+                    disabled={isLoading}
                   >
                     {showPassword ? <FiEyeOff className="h-5 w-5" /> : <FiEye className="h-5 w-5" />}
                   </button>
@@ -120,6 +164,23 @@ const AdminLogin = () => {
               className="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-xl text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               {isLoading ? 'Signing in...' : 'Sign in'}
+            </button>
+          </div>
+
+          {/* Google Login Button */}
+          <div className="mt-4">
+            <button
+              type="button"
+              onClick={handleAdminGoogleLogin}
+              disabled={isLoading}
+              className="w-full flex items-center justify-center gap-2 py-3 px-4 border border-gray-300 rounded-xl text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              <img 
+                src="https://developers.google.com/identity/images/g-logo.png" 
+                alt="Google" 
+                className="w-5 h-5" 
+              />
+              Sign in with Google
             </button>
           </div>
 
